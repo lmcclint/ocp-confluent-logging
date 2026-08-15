@@ -1,0 +1,3 @@
+# The CA private key is generated on demand by 20-certs/gen-ca.sh and must
+# never be committed. Everything else in this repo is safe to track.
+20-certs/generated/

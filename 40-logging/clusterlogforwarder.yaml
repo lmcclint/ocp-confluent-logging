@@ -1,0 +1,66 @@
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: kafka-forwarder
+  namespace: openshift-logging
+spec:
+  serviceAccount:
+    name: log-collector
+
+  inputs:
+    # A named input rather than the built-in `application`, so collection is
+    # scoped to the demo namespaces instead of every workload on the cluster.
+    # Widen or replace this glob to onboard real namespaces.
+    #
+    # Note this filters on NAMESPACE NAME, not namespace labels - the API has
+    # no namespace-label selector. The alternative is `selector:`, which
+    # matches POD labels and would require every workload to carry one.
+    - name: demo-apps
+      type: application
+      application:
+        includes:
+          - namespace: "log-demo-*"
+
+  outputs:
+    - name: confluent-kafka
+      type: kafka
+      kafka:
+        brokers:
+          - tls://kafka.confluent.svc.cluster.local:9071
+
+        # One topic per namespace: ocp-logs.log-demo-a, ocp-logs.log-demo-b, …
+        #
+        # The `||` fallback is mandatory - the API rejects a dynamic value
+        # without one. It catches records that carry no namespace (anything
+        # not from a pod), which would otherwise have nowhere to go.
+        #
+        # These topics are created on demand by the broker, which is why
+        # kafka.yaml enables auto.create.topics.enable.
+        topic: 'ocp-logs.{.kubernetes.namespace_name||"unknown"}'
+
+      tls:
+        ca:
+          configMapName: confluent-kafka-ca
+          key: ca.crt
+
+  pipelines:
+    - name: demo-apps-to-confluent
+      inputRefs:
+        - demo-apps
+      outputRefs:
+        - confluent-kafka
+
+    # Adding infrastructure logs later is this, uncommented. The
+    # collect-infrastructure-logs ClusterRoleBinding is already in place
+    # (40-logging/rbac.yaml), so this validates as-is.
+    #
+    # Infrastructure records have no kubernetes.namespace_name, so they land in
+    # the "unknown" fallback topic unless you give them a dedicated output.
+    # Be aware of the volume: cluster-wide infrastructure logs wrote 20Gi in
+    # about eight minutes on a 7-node cluster.
+    #
+    # - name: infrastructure-to-confluent
+    #   inputRefs:
+    #     - infrastructure
+    #   outputRefs:
+    #     - confluent-kafka

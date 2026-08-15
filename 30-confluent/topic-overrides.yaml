@@ -1,0 +1,46 @@
+# Per-topic tuning on top of the auto-created default.
+#
+# Topics here are created on demand by the broker (one per namespace), so they
+# normally inherit whatever `kafka.yaml` sets cluster-wide. A KafkaTopic CR
+# named for one of them overrides that for just that topic - Kafka's config
+# precedence is topic > broker-static > built-in default:
+#
+#   retention.bytes=104857600 synonyms={
+#       DYNAMIC_TOPIC_CONFIG:retention.bytes=104857600,       <- this CR
+#       STATIC_BROKER_CONFIG:log.retention.bytes=1073741824,  <- kafka.yaml
+#       DEFAULT_CONFIG:log.retention.bytes=-1 }               <- Kafka default
+#
+# CFK ADOPTS a topic that already exists rather than failing or recreating it:
+# applying this against a topic holding 1572 records altered it in place and
+# left every record intact. So it is safe to add one of these after the fact,
+# once you know a particular namespace needs different retention.
+#
+# Deleting one of these CRs is NOT tested here - do not assume the underlying
+# topic survives it. Remove the file from kustomization.yaml if you want the
+# topic back on cluster defaults, and change the config explicitly rather than
+# deleting the CR.
+#
+# This file is a demonstration. log-demo-a is deliberately left with no CR, so
+# you can compare the two:
+#
+#   oc exec kafka-0 -n confluent -c kafka -- \
+#     kafka-configs --bootstrap-server localhost:9092 \
+#     --entity-type topics --entity-name ocp-logs.log-demo-a --describe
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaTopic
+metadata:
+  # The k8s object name. `spec.name` carries the real topic name, so resource
+  # names do not have to encode the dotted topic naming.
+  name: ocp-logs-log-demo-b
+  namespace: confluent
+spec:
+  name: ocp-logs.log-demo-b
+  replicas: 1
+  partitionCount: 1
+  configs:
+    # Much tighter than the 1Gi cluster default: 100Mi and 10 minutes, so the
+    # effect is visible on a demo rather than theoretical.
+    retention.bytes: "104857600"
+    retention.ms: "600000"
+    segment.bytes: "33554432"

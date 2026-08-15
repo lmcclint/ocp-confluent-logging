@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: log-demo
+  labels:
+    app: log-demo
+spec:
+  # No host: OpenShift generates log-demo-<namespace>.<apps domain>, which is
+  # already unique per namespace, so the two demo copies cannot collide.
+  to:
+    kind: Service
+    name: log-demo
+  port:
+    targetPort: http

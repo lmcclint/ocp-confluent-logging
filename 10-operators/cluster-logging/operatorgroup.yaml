@@ -1,0 +1,10 @@
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cluster-logging
+  namespace: openshift-logging
+spec:
+  # OwnNamespace install mode. The collector DaemonSet it creates is
+  # cluster-wide regardless; this only scopes the operator's own CSV.
+  targetNamespaces:
+    - openshift-logging

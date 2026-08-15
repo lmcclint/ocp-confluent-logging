@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Two identical copies of the same app in different namespaces. That is the
+# whole point: the forwarder routes them to ocp-logs.log-demo-a and
+# ocp-logs.log-demo-b purely on namespace, with no per-app configuration.
+resources:
+  - namespaces.yaml
+  - log-demo-a
+  - log-demo-b

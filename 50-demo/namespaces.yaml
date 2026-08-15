@@ -1,0 +1,11 @@
+# Both names must match the `log-demo-*` glob in the ClusterLogForwarder's
+# `demo-apps` input, or their logs are never collected.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: log-demo-a
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: log-demo-b

@@ -1,0 +1,41 @@
+# Helm values for Confluent for Kubernetes (CFK).
+#
+# Why Helm and not the OperatorHub/OLM bundle: the certified bundle
+# confluent-for-kubernetes.v3.3.0 ships a ClusterRole with no batch/jobs rule,
+# but the 3.3.0 operator binary starts a cluster-scoped Job informer (Gateway
+# hot-reload canary). Its cache never syncs, and the operator CrashLoopBackOffs
+# with:
+#
+#   failed to wait for kraftmigrationjob caches to sync
+#   jobs.batch is forbidden: ... cannot list resource "jobs" ... at the cluster scope
+#
+# The Helm chart at the identical app version (chart 0.1718.10 / app 3.3.0)
+# does grant batch/jobs, so installing from the chart avoids the defect at the
+# source rather than patching around it.
+
+# Watch only the release namespace (confluent). This also renders the
+# operator's RBAC as a namespaced Role instead of a ClusterRole, which keeps
+# the Job informer namespace-scoped.
+namespaced: true
+namespaceList: []
+
+# OpenShift's restricted-v2 SCC will not admit a pod that requests
+# runAsUser/fsGroup 1001. Disabling podSecurity lets OpenShift assign UIDs from
+# the namespace's allocated range instead. Component CRs pair this with
+# `podTemplate.podSecurityContext: {}`.
+podSecurity:
+  enabled: false
+
+# The chart defaults this to `confluent-registry`, a secret we do not create.
+# Images are pulled anonymously from Docker Hub.
+imagePullSecretRef: ""
+
+replicas: 1
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi

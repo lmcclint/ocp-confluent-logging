@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: confluent
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-logging
+  labels:
+    # Lets the cluster monitoring stack scrape the collector's metrics.
+    openshift.io/cluster-monitoring: "true"
