@@ -22,7 +22,7 @@ IMAGE="$(oc get sts kafka -n "$CONFLUENT_NS" -o jsonpath='{.spec.template.spec.c
 echo "==> Log topics currently in the cluster:"
 oc exec kafka-0 -n "$CONFLUENT_NS" -c kafka -- \
   kafka-topics --bootstrap-server localhost:9092 --list 2>/dev/null \
-  | grep '^ocp-logs' | sed 's/^/    /' || true
+  | grep '^ocp-' | sed 's/^/    /' || true
 
 echo
 echo "==> Consuming up to $MESSAGES messages from '$TOPIC' (image: $IMAGE)"

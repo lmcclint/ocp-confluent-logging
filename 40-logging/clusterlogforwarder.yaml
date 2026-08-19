@@ -43,6 +43,17 @@ spec:
           configMapName: confluent-kafka-ca
           key: ca.crt
 
+    - name: confluent-kafka-audit
+      type: kafka
+      kafka:
+        brokers:
+          - tls://kafka.confluent.svc.cluster.local:9071
+        topic: ocp-audit
+      tls:
+        ca:
+          configMapName: confluent-kafka-ca
+          key: ca.crt
+
   pipelines:
     - name: demo-apps-to-confluent
       inputRefs:
@@ -50,12 +61,17 @@ spec:
       outputRefs:
         - confluent-kafka
 
-    # Adding infrastructure logs later is this, uncommented. The
-    # collect-infrastructure-logs ClusterRoleBinding is already in place
-    # (40-logging/rbac.yaml), so this validates as-is.
+    - name: audit-to-confluent
+      inputRefs:
+        - audit
+      outputRefs:
+        - confluent-kafka-audit
+
+    # Infrastructure logs: uncomment to enable. Uses the same
+    # confluent-kafka-audit output pattern — give it its own output with
+    # topic: ocp-infra to keep it separate. The collect-infrastructure-logs
+    # ClusterRoleBinding is already in place (40-logging/rbac.yaml).
     #
-    # Infrastructure records have no kubernetes.namespace_name, so they land in
-    # the "unknown" fallback topic unless you give them a dedicated output.
     # Be aware of the volume: cluster-wide infrastructure logs wrote 20Gi in
     # about eight minutes on a 7-node cluster.
     #
@@ -63,4 +79,4 @@ spec:
     #   inputRefs:
     #     - infrastructure
     #   outputRefs:
-    #     - confluent-kafka
+    #     - confluent-kafka-infra

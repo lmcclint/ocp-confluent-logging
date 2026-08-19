@@ -20,9 +20,11 @@ It is deliberately the smallest thing that proves the pipeline end to end.
               namespaces matching log-demo-*   one self-signed CA (20-certs)
 ```
 
-Logs are routed to **one topic per namespace** — `ocp-logs.<namespace>` — with
-no per-application configuration. Two identical demo apps in two namespaces
-land in two separate topics purely by where they run.
+Application logs are routed to **one topic per namespace** —
+`ocp-logs.<namespace>` — with no per-application configuration. Two identical
+demo apps in two namespaces land in two separate topics purely by where they
+run. Audit logs (kube-apiserver, openshift-apiserver, host auditd, OVN) go to
+a single `ocp-audit` topic.
 ## Quick start
 
 ```bash
@@ -278,13 +280,17 @@ namespace-label selector. Your options are:
 | Opt-in per workload | `selector:` — matches **pod** labels, so every pod must carry one |
 | Everything | Drop the custom input, use the built-in `application` |
 
-Infrastructure logs are deliberately off. A commented-out second pipeline in
+**Audit logs** are on by default, forwarded to a fixed `ocp-audit` topic. This
+covers kube-apiserver, openshift-apiserver, host auditd, and OVN audit — the
+"who did what" records useful for compliance and forensics.
+
+**Infrastructure logs** are deliberately off. A commented-out pipeline in
 `40-logging/clusterlogforwarder.yaml` turns them back on — the
 `collect-infrastructure-logs` binding is already in place, so it validates as
 soon as you uncomment it. Mind the volume: cluster-wide infrastructure logs
-wrote 20Gi in about eight minutes here. Note also that infrastructure records
-carry no namespace, so they land in the `unknown` fallback topic unless you
-give them their own output.
+wrote 20Gi in about eight minutes on a 7-node cluster. Infrastructure records
+carry no namespace, so they need their own output with a fixed topic (e.g.
+`ocp-infra`) rather than the per-namespace template.
 
 ## Demo apps
 
@@ -311,8 +317,9 @@ silently never collected.
 ## Verifying
 
 ```bash
-./verify.sh                              # lists ocp-logs.* then reads log-demo-a
+./verify.sh                              # lists ocp-* topics then reads log-demo-a
 TOPIC=ocp-logs.log-demo-b ./verify.sh    # the other namespace
+TOPIC=ocp-audit ./verify.sh              # audit logs
 MESSAGES=50 ./verify.sh                  # more records
 ```
 
