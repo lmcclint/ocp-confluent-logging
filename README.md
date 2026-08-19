@@ -23,11 +23,6 @@ It is deliberately the smallest thing that proves the pipeline end to end.
 Logs are routed to **one topic per namespace** — `ocp-logs.<namespace>` — with
 no per-application configuration. Two identical demo apps in two namespaces
 land in two separate topics purely by where they run.
-
-> **Picking this up fresh?** Read [HANDOFF.md](HANDOFF.md) first — it records
-> what has actually been verified on a cluster, what has not, and the next
-> steps in order.
-
 ## Quick start
 
 ```bash
