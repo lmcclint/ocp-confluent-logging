@@ -83,18 +83,6 @@ log "20: certificate authority"
 log "30: Confluent Platform"
 oc apply -k "$HERE/30-confluent"
 
-# Point Control Center's Route at this cluster's ingress domain. The manifest
-# carries a placeholder so the repo stays portable and free of any one
-# cluster's hostnames; this is the only value patched at deploy time.
-APPS_DOMAIN="$(oc get ingresses.config/cluster -o jsonpath='{.spec.domain}' 2>/dev/null || true)"
-if [[ -n "$APPS_DOMAIN" ]]; then
-  log "     routing Control Center at $APPS_DOMAIN"
-  oc patch controlcenter controlcenter -n "$CONFLUENT_NS" --type=merge \
-    -p "{\"spec\":{\"externalAccess\":{\"route\":{\"domain\":\"$APPS_DOMAIN\"}}}}"
-else
-  warn "could not read the cluster ingress domain; Control Center's Route will use the placeholder"
-fi
-
 log "     waiting for KRaft controller (this takes a few minutes)"
 oc wait --for=jsonpath='{.status.phase}'=RUNNING --timeout=600s \
   -n "$CONFLUENT_NS" kraftcontroller/kraftcontroller
@@ -136,7 +124,7 @@ done
 
 # ---------------------------------------------------------------- done
 log "Bootstrap complete"
-C3_HOST="$(oc get route -n "$CONFLUENT_NS" -o jsonpath='{.items[?(@.metadata.name=="controlcenter-bootstrap")].spec.host}' 2>/dev/null || true)"
+C3_HOST="$(oc get route controlcenter -n "$CONFLUENT_NS" -o jsonpath='{.spec.host}' 2>/dev/null || true)"
 [[ -n "$C3_HOST" ]] && echo "    Control Center: https://$C3_HOST"
 echo "    Topics:         ocp-logs.<namespace>, one per collected namespace"
 for ns in log-demo-a log-demo-b; do

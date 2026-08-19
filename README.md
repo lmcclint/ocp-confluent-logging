@@ -24,6 +24,10 @@ Logs are routed to **one topic per namespace** — `ocp-logs.<namespace>` — wi
 no per-application configuration. Two identical demo apps in two namespaces
 land in two separate topics purely by where they run.
 
+> **Picking this up fresh?** Read [HANDOFF.md](HANDOFF.md) first — it records
+> what has actually been verified on a cluster, what has not, and the next
+> steps in order.
+
 ## Quick start
 
 ```bash
@@ -46,7 +50,7 @@ with `ReadWriteOnce` on the cluster.
 | `10-operators/cluster-logging/` | OperatorGroup + Subscription, Red Hat logging `stable-6.4` |
 | `10-operators/cfk/values.yaml` | Helm values for Confluent for Kubernetes |
 | `20-certs/gen-ca.sh` | Mints the CA, loads it as `ca-pair-sslcerts` |
-| `30-confluent/` | KRaftController, Kafka, Schema Registry, Control Center, topic overrides |
+| `30-confluent/` | KRaftController, Kafka, Schema Registry, Control Center + Route, topic overrides |
 | `40-logging/` | ServiceAccount, collector RBAC, ClusterLogForwarder |
 | `50-demo/` | Two demo apps in `log-demo-a` / `log-demo-b` |
 | `bootstrap.sh` / `teardown.sh` / `verify.sh` | Ordered apply, removal, proof |
@@ -55,12 +59,16 @@ Every numbered directory is `oc apply -k`-able on its own. `bootstrap.sh` only
 adds ordering and the waits between stages, so promoting this to Argo CD later
 is mostly a matter of replacing those waits with sync waves.
 
-**One exception.** `30-confluent/controlcenter.yaml` carries a placeholder
-ingress domain (`apps.example.com`) so the repo contains no cluster-specific
-hostnames. `bootstrap.sh` patches in the real one, read from
-`oc get ingresses.config/cluster`. Applying `30-confluent` by itself therefore
-leaves Control Center with an unreachable Route — either run `bootstrap.sh`, or
-set `spec.externalAccess.route.domain` permanently for your environment.
+This repo contains **no cluster-specific hostnames**. Control Center and the
+demo apps each get a plain OpenShift `Route` with no `host` field, so OpenShift
+generates one from the resource and namespace names plus the cluster's own
+ingress domain — `controlcenter-confluent.apps.<your-cluster>`. Nothing needs
+patching per environment.
+
+That is why Control Center's Route lives in its own
+`30-confluent/controlcenter-route.yaml` rather than using CFK's
+`spec.externalAccess`: CFK's route support makes `domain` a required field,
+which would force one cluster's hostname into the manifest.
 
 Only two steps are imperative: the Helm install and the `openssl` CA
 generation. Both are idempotent, so re-running `bootstrap.sh` against a

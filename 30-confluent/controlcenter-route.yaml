@@ -1,0 +1,30 @@
+# Control Center's Route, created directly rather than via CFK's
+# `spec.externalAccess`.
+#
+# CFK's route support requires an explicit `domain`, which would bake one
+# cluster's ingress hostname into the repo and need patching per environment.
+# Omitting `host` here instead lets OpenShift generate it from the resource and
+# namespace names plus the cluster's own ingress domain:
+#
+#   controlcenter-confluent.apps.<your-cluster-domain>
+#
+# Same approach the demo apps use in 50-demo/base/route.yaml.
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: controlcenter
+  namespace: confluent
+  labels:
+    app: controlcenter
+spec:
+  to:
+    kind: Service
+    name: controlcenter
+  port:
+    # CFK names this port `external` on the controlcenter Service.
+    targetPort: external
+  tls:
+    # Control Center terminates TLS itself using the CFK-issued certificate,
+    # so the router must not terminate. The cert is signed by our private CA,
+    # so browsers will warn.
+    termination: passthrough

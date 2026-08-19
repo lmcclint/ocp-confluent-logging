@@ -9,4 +9,5 @@ resources:
   - kafka.yaml
   - schemaregistry.yaml
   - controlcenter.yaml
+  - controlcenter-route.yaml
   - topic-overrides.yaml
