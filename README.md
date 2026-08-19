@@ -7,18 +7,18 @@ Built as a test lab: single broker, single KRaft controller, no SASL, no RBAC.
 It is deliberately the smallest thing that proves the pipeline end to end.
 
 ```
- log-demo-a ─┐                                    confluent namespace
- log-demo-b ─┤                                ┌──────────────────────────┐
-             │  ┌──────────────────┐          │ Kafka ── KRaft ctrl      │
-             └─►│ collector (DS)   │ tls:9071 │  ├─ ocp-logs.log-demo-a  │
-  audit logs───►│ openshift-logging├─────────►│  ├─ ocp-logs.log-demo-b  │
-                └──────────────────┘          │  ├─ ocp-audit            │
-                        ▲                     │  ├─ Schema Registry      │
-                        │                     │  └─ Control Center       │
-              ClusterLogForwarder             └──────────────────────────┘
-              ├─ application (log-demo-*)           ▲
-              └─ audit (all nodes)                  │ certs signed by
-                                              one self-signed CA (20-certs)
+  namespaces                                       confluent namespace
+ ┌──────────┐                                  ┌──────────────────────────┐
+ │log-demo-a│─┐                                │ Kafka ── KRaft ctrl      │
+ │log-demo-b│─┤  ┌──────────────────┐ tls:9071 │  ├─ ocp-logs.log-demo-a  │
+ └──────────┘ └─►│ collector (DS)   ├────────►│  ├─ ocp-logs.log-demo-b  │
+  audit logs────►│ openshift-logging │          │  ├─ ocp-audit            │
+                 └──────────────────┘          │  ├─ Schema Registry      │
+                         ▲                     │  └─ Control Center       │
+               ClusterLogForwarder             └──────────────────────────┘
+               ├─ application (log-demo-*)           ▲
+               └─ audit (all nodes)                  │ certs signed by
+                                               one self-signed CA (20-certs)
 ```
 
 Application logs are routed to **one topic per namespace** —
