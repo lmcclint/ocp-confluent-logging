@@ -114,13 +114,13 @@ java.io.IOException: No space left on device
 ```
 
 This is why `kafka.yaml` sets a cluster-wide `log.retention.bytes` of 1Gi per
-partition. It matters more now than when it was written: topics are created on
-demand per namespace, so no topic carries its own cap and the broker-wide
-default is the only bound on any of them.
+partition. Auto-created topics inherit this cap, and individual topics can be
+tightened further with a `KafkaTopic` CR — `topic-overrides.yaml` does this
+for `ocp-logs.log-demo-b` (100Mi vs. the 1Gi default).
 
-The current configuration keeps this in check two ways — `application` logs
-only, and only from namespaces matching `log-demo-*`. Re-enabling the
-infrastructure pipeline removes both protections at once.
+The current configuration also limits what gets collected: application logs
+from namespaces matching `log-demo-*`, plus audit logs. Infrastructure logs
+are off — re-enabling them removes the biggest volume constraint.
 
 ### 3. Control Center pins the whole stack to 7.9.x
 
@@ -156,10 +156,10 @@ rather than letting the request imply it, gives the pod real limits, and cuts
 `streams.num.stream.threads` to 2 (C3 otherwise runs a thread per core across
 several topologies, each with its own RocksDB state):
 
-| | before | after |
+| | before (2Gi request, no explicit heap) | after (8Gi limit, `-Xmx4G`) |
 |---|---|---|
-| memory | 3812Mi | ~1050Mi |
-| CPU | 461m | ~100m |
+| RSS | 3812Mi (2× the request) | stable under limit |
+| CPU | pinned at 500m request | ~100m idle |
 | `GET /` | slow / blank UI | 48ms |
 
 If you resize Control Center, set the heap explicitly — do not just raise the
@@ -352,6 +352,8 @@ disk; delete `20-certs/generated/` by hand to force a new one.
 - **More namespaces**: widen the `includes` glob on the `demo-apps` input, or
   drop the custom input entirely to collect every application namespace. New
   topics appear on their own as logs arrive.
-- **Different log sources**: edit `inputRefs`. Each source needs the matching
-  `collect-*-logs` ClusterRoleBinding in `40-logging/rbac.yaml`, or the
-  forwarder fails validation. All three bindings are already in place.
+- **Different log sources**: add a pipeline with the appropriate `inputRefs`
+  and a dedicated output. Each source needs the matching `collect-*-logs`
+  ClusterRoleBinding in `40-logging/rbac.yaml`, or the forwarder fails
+  validation. All three bindings (application, audit, infrastructure) are
+  already in place — audit is active, infrastructure is commented out.
