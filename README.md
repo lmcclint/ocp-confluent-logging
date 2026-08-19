@@ -11,8 +11,8 @@ It is deliberately the smallest thing that proves the pipeline end to end.
  ┌──────────┐                                  ┌──────────────────────────┐
  │log-demo-a│─┐                                │ Kafka ── KRaft ctrl      │
  │log-demo-b│─┤  ┌──────────────────┐ tls:9071 │  ├─ ocp-logs.log-demo-a  │
- └──────────┘ └─►│ collector (DS)   ├────────►│  ├─ ocp-logs.log-demo-b  │
-  audit logs────►│ openshift-logging │          │  ├─ ocp-audit            │
+ └──────────┘ └─►│ collector (DS)   ├────────► │  ├─ ocp-logs.log-demo-b  │
+  audit logs────►│ openshift-logging│          │  ├─ ocp-audit            │
                  └──────────────────┘          │  ├─ Schema Registry      │
                          ▲                     │  └─ Control Center       │
                ClusterLogForwarder             └──────────────────────────┘
