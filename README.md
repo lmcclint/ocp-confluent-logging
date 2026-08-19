@@ -11,13 +11,14 @@ It is deliberately the smallest thing that proves the pipeline end to end.
  log-demo-b ─┤                                ┌──────────────────────────┐
              │  ┌──────────────────┐          │ Kafka ── KRaft ctrl      │
              └─►│ collector (DS)   │ tls:9071 │  ├─ ocp-logs.log-demo-a  │
-                │ openshift-logging├─────────►│  ├─ ocp-logs.log-demo-b  │
-                └──────────────────┘          │  ├─ Schema Registry      │
-                        ▲                     │  └─ Control Center       │
-                        │                     └──────────────────────────┘
-              ClusterLogForwarder                   ▲
-              application only,                     │ certs signed by
-              namespaces matching log-demo-*   one self-signed CA (20-certs)
+  audit logs───►│ openshift-logging├─────────►│  ├─ ocp-logs.log-demo-b  │
+                └──────────────────┘          │  ├─ ocp-audit            │
+                        ▲                     │  ├─ Schema Registry      │
+                        │                     │  └─ Control Center       │
+              ClusterLogForwarder             └──────────────────────────┘
+              ├─ application (log-demo-*)           ▲
+              └─ audit (all nodes)                  │ certs signed by
+                                              one self-signed CA (20-certs)
 ```
 
 Application logs are routed to **one topic per namespace** —
